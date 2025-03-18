@@ -7,15 +7,14 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tabishnaqvi1311/manimbot-backend/utils"
 	"google.golang.org/genai"
 )
 
 const SystemPrompt = `
 You are an expert in creating educational animations with Manim. 
 Generate Python code using the Manim library to visualize and explain the concept.
-Your response should contain:
-1. A short explanation of the concept
-2. A complete, working Manim Python code that demonstrates the concept visually
+Your response should only contain a complete, working Manim Python code that demonstrates the concept visually, nothing extra such as comments or docstrings
 
 The code must:
 - Import necessary Manim modules
@@ -32,6 +31,11 @@ type GenerateRequest struct {
 
 func generateManim(ctx context.Context, prompt string) (string, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
+
+	if apiKey == "" {
+		return "", fmt.Errorf("env not set")
+	}
+
 	fullPrompt := SystemPrompt + "\n" + prompt
 
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{APIKey: apiKey})
@@ -78,5 +82,11 @@ func HandleGenerate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": content})
+	code := utils.ExtractCode(content)
+	if code == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "error extracting code"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": code})
 }
