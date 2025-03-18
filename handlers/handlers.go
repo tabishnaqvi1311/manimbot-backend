@@ -88,5 +88,13 @@ func HandleGenerate(c *gin.Context) {
 		return
 	}
 
+	video, err := utils.RunCode(code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "error running code"})
+		return
+	}
+
+	fmt.Println(video)
+
 	c.JSON(http.StatusOK, gin.H{"message": code})
 }
