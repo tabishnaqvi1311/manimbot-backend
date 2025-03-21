@@ -35,6 +35,6 @@ func RunCode(code string) (string, error) {
 		return "", fmt.Errorf("manim execution code failed")
 	}
 
-	return "/static/videos/" + outputFile, nil
+	return "/static/videos/animation/480p15/" + outputFile, nil
 
 }

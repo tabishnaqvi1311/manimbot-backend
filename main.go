@@ -12,7 +12,7 @@ func main(){
 		c.JSON(200, gin.H{"message": "testingg"})
 	})
 
-	router.GET("/generate", handlers.HandleGenerate)
+	router.POST("/generate", handlers.HandleGenerate)
 
 	router.Run("localhost:8000")
 }

@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tabishnaqvi1311/manimbot-backend/utils"
+
+	// "github.com/tabishnaqvi1311/manimbot-backend/utils"
 	"google.golang.org/genai"
 )
 
@@ -64,6 +67,7 @@ func generateManim(ctx context.Context, prompt string) (string, error) {
 
 func HandleGenerate(c *gin.Context) {
 	var req GenerateRequest
+	startTime := time.Now()
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request"})
@@ -74,27 +78,51 @@ func HandleGenerate(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "prompt cannot be empty"})
 		return
 	}
-
+	
 	content, err := generateManim(c.Request.Context(), req.Prompt)
 	if err != nil {
 		fmt.Println("error generating manim code ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 		return
 	}
+	elapsed := time.Since(startTime)
+	fmt.Printf("generated manim code in [%s]\n", elapsed)
 
+	startTime = time.Now()
 	code := utils.ExtractCode(content)
 	if code == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "error extracting code"})
 		return
 	}
-
+	elapsed = time.Since(startTime)
+	fmt.Printf("extracted code in [%s]\n", elapsed)
+	
+	startTime = time.Now()
 	video, err := utils.RunCode(code)
 	if err != nil {
+		fmt.Println(err)
+		dir, err := os.Getwd()
+		if err != nil {
+			return
+		}
+		os.RemoveAll(dir + "/static")
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "error running code"})
 		return
 	}
+	elapsed = time.Since(startTime)
+	fmt.Printf("ran code in [%s]\n", elapsed)
+	
+	startTime = time.Now()
+	s3Url, err := utils.UploadToS3(video) 
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		return;
+	}
+	elapsed = time.Since(startTime)
+	fmt.Printf("uploaded to s3 in [%s]\n", elapsed)
 
 	fmt.Println(video)
 
-	c.JSON(http.StatusOK, gin.H{"message": code})
+	c.JSON(http.StatusOK, gin.H{"message": s3Url})
 }
