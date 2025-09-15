@@ -24,15 +24,16 @@ func RunCode(code string) (string, error) {
 
 	cmd := exec.Command(
 		"manim",
-		"-ql",                   
-		"--media_dir", "static",  
-		tempFile,                
-		"Scene",                  
-		"-o", outputFile,     
+		"-ql",
+		"--media_dir", "static",
+		tempFile,
+		"Scene",
+		"-o", outputFile,
 	)
 
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("manim execution code failed")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("manim execution failed: %v\nOutput: %s", err, string(output))
 	}
 
 	return "/static/videos/animation/480p15/" + outputFile, nil
