@@ -11,15 +11,15 @@ import (
 )
 
 func UploadToS3(filePath string) (string, error) {
-
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("could not find dir, %v", err)
 	}
 
-	file, err := os.Open(dir + filePath)
+	fullPath := filepath.Join(dir, filePath)
+	file, err := os.Open(fullPath)
 	if err != nil {
-		return "", fmt.Errorf("could not open file, %v", err)
+		return "", fmt.Errorf("could not open file at %s: %v", fullPath, err)
 	}
 	defer file.Close()
 
@@ -34,11 +34,10 @@ func UploadToS3(filePath string) (string, error) {
 
 	svc := s3.New(sess)
 
-
 	_, err = svc.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String("manim-bot"),
-		Key: aws.String(objectKey),
-		Body: file,
+		Bucket:      aws.String("feynman-bot"),
+		Key:         aws.String(objectKey),
+		Body:        file,
 		ContentType: aws.String("video/mp4"),
 	})
 	if err != nil {
@@ -47,10 +46,10 @@ func UploadToS3(filePath string) (string, error) {
 
 	file.Close()
 
-	err = os.RemoveAll(dir + "/static")
-	if err != nil {
-		return "", fmt.Errorf("file uploaded to s3 but failed to delete local file: %w", err)
+	staticDir := filepath.Join(dir, "static")
+	if err := os.RemoveAll(staticDir); err != nil {
+		fmt.Printf("Warning: failed to delete local file: %v\n", err)
 	}
-	
-	return fmt.Sprintf("https://manim-bot.s3.ap-south-1.amazonaws.com/%s",objectKey),nil
+
+	return fmt.Sprintf("https://feynman-bot.s3.ap-south-1.amazonaws.com/%s", objectKey), nil
 }
